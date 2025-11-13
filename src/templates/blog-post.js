@@ -70,6 +70,7 @@ const BlogPostTemplate = ({
         inputPosition="bottom"
         theme="transparent_dark"
         lang="en"
+        host="giscus.nicolas-coutin.com"
       />
     </Layout>
   )
