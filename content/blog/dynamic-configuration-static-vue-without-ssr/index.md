@@ -105,3 +105,5 @@ If you are facing the same issue we had, you should definitely look into [Server
 ## Was this article helpful ?
 
 Feel free to drop a 👍 !
+
+This article has been entirely written by a human.
