@@ -1,0 +1,11 @@
+.git
+.github
+.vscode
+node_modules
+.cache
+public
+.env*
+Dockerfile
+.dockerignore
+README.md
+LICENSE
