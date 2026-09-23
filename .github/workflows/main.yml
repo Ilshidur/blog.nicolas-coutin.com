@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    name: Build + Push image
+    name: Build + Push image, redeploy
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo.
@@ -32,3 +32,26 @@ jobs:
             rg.fr-par.scw.cloud/blog-nicolas-coutin-com/web:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Redeploy the Scaleway Serverless Container.
+        # SCW_CONTAINER_ID (variable) and SCW_SECRET_KEY (secret) are managed by Terraform in the
+        # Infrastructure repo; the step is skipped until the container exists.
+        if: vars.SCW_CONTAINER_ID != ''
+        env:
+          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          SCW_CONTAINER_ID: ${{ vars.SCW_CONTAINER_ID }}
+        run: |
+          set -euo pipefail
+          api="https://api.scaleway.com/containers/v1beta1/regions/fr-par/containers/$SCW_CONTAINER_ID"
+          # Pulls :latest again and rolls the instances.
+          curl -fsS -X POST -H "X-Auth-Token: $SCW_SECRET_KEY" -H "Content-Type: application/json" -d '{}' "$api/deploy" > /dev/null
+          for _ in $(seq 1 60); do
+            sleep 5
+            status=$(curl -fsS -H "X-Auth-Token: $SCW_SECRET_KEY" "$api" | jq -r .status)
+            echo "container status: $status"
+            case "$status" in
+              ready) exit 0 ;;
+              error) curl -fsS -H "X-Auth-Token: $SCW_SECRET_KEY" "$api" | jq -r .error_message; exit 1 ;;
+            esac
+          done
+          echo "timed out waiting for the container to become ready" >&2
+          exit 1
